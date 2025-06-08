@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient,ObjectId } from 'mongodb';
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/todos';
 const MONGO_DB = process.env.MONGO_DB || 'todos';
@@ -19,18 +19,42 @@ export default class DB {
     }
 
     queryById(id) {
-        // TODO: Implement queryById
+        let objid;
+        return new Promise((resolve,reject)=>{
+            try{
+                objid = ObjectId.createFromHexString(id);
+                resolve(collection.findOne({_id: objid}));
+            }catch(error){
+                reject(new Error(error.message));
+            }
+        })
     }
+        // TDO: Implement queryById
 
-    update(id, order) {
-        // TODO: Implement update
+    update(id, todo) {
+        return new Promise((resolve,reject)=>{
+            try{
+                const objId = ObjectId.createFromHexString(id);
+                resolve( collection.updateOne({_id: objId},
+                {$set:todo}));
+            }catch{
+                reject(new Error("Could not resolve id."));
+            }
+        })
     }
 
     delete(id) {
-        // TODO: Implement delete
+        return new Promise((resolve,reject)=>{
+            try{
+                const objId = ObjectId.createFromHexString(id);
+                resolve(collection.deleteOne({_id: objId}));
+            }catch{
+                reject(new Error("Could not resolve id."));
+            }
+        })
     }
 
-    insert(order) {
-        // TODO: Implement insert
+    insert(todo) {
+        return collection.insertOne(todo);
     }
 }
