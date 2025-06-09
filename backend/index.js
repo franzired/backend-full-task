@@ -1,12 +1,42 @@
 import express from 'express';
 import DB from './db.js'
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import config from './keycloak.config.js';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import passport from 'passport';
 
 const PORT = process.env.PORT || 3000;
+
+/** Passport-Options */
+
+const passport_options = {
+    'jwtFromRequest' : (req)=>{
+        console.log("in jwt from Request");
+        let token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        if(!token){
+            if(req.cookies.token){
+                token = req.cookies.token;
+            }
+        }
+        return token;
+    },
+    'secretOrKey' : `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy8yBKM7qsdM/NhsUpjPPwFuhYxTTUmWddJ0J5pIpgVBnFuSBFkTk3AzvYJrFLaHjOahEbs6/WaRuR2TOgbtJi1SEcwNk/mArwGpeTzOGo3g6chiy4ScmEtHTK5+18Mz5+NDhQ6S23joDm6zpQLM2yoNIUDMCPctlb3IiuZl2LKqOCdqCiBExORGKkDKlU8UH5hTSc+C8sp0EOx/xoN0UoWVFjd74fu30Vvw4tS0QomUN19L0VMrS14HmOFbJQaEMGIWmP2hJhGjFd8GTqQmN6OJzeM3cG/VdYfAyeY9yBMxtGTkSvuqVH2NIEPnACtHU3IfGpRCk7GsQ9fJc4BB6yQIDAQAB
+-----END PUBLIC KEY-----`
+}
 
 /** Zentrales Objekt für unsere Express-Applikation */
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
+
+passport.use(new Strategy(passport_options,(payload,done)=>{
+    return done(null,payload);
+}))
+
+app.use("/todos",passport.authenticate('jwt',{session:false, failureRedirect:'/login'}));
 
 /** global instance of our database */
 let db = new DB();
@@ -118,3 +148,41 @@ initDB()
         })
     })
 
+
+/**
+ * Login
+ */
+
+app.get("/login",(req,res)=>{
+    if(req.user || req.cookies.token){
+        console.log("Token already set.");
+        return res.sendStatus(200);
+    }
+    console.log("Fetching token..");
+    const params = new URLSearchParams();
+    params.append('grant_type','password');
+    params.append('username','public');
+    params.append('password','todo');
+    fetch(config.token_endpoint,{
+        method:"POST",
+        headers:{
+            "Authorization": "Basic dG9kby1iYWNrZW5kOjFWTlRsQ3ZzaHJjWkQ0Zm0wZUpqVE9QZWN2d210M0x5",
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString()
+    }).then((response)=>{
+        if(response.ok){
+            return response.json();
+        }else{
+            console.log(response);
+            throw new Error("Response not ok.");
+        }
+    })
+    .then((data)=>{
+        res.cookie('token',data.access_token,{maxAge:data.expires_in*1000}).sendStatus(200);
+    })
+    .catch((error)=>{
+        console.log(error.message);
+        res.sendStatus(401);
+    })
+});
