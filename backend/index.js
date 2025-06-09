@@ -5,6 +5,9 @@ import config from './keycloak.config.js';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import passport from 'passport';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerOptions from './swagger.config.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -26,6 +29,11 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy8yBKM7qsdM/NhsUpjPPwFuhYxTTUmWddJ0J
 -----END PUBLIC KEY-----`
 }
 
+/** Swagger-Dokumentation erstellen */
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+
+
 /** Zentrales Objekt für unsere Express-Applikation */
 const app = express();
 
@@ -38,6 +46,10 @@ passport.use(new Strategy(passport_options,(payload,done)=>{
 
 app.use("/todos",passport.authenticate('jwt',{session:false, failureRedirect:'/login'}));
 
+//Swagger Middleware
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 /** global instance of our database */
 let db = new DB();
 
@@ -49,8 +61,21 @@ async function initDB() {
 
 // implement API routes
 
-/** Return all todos. 
- *  Be aware that the db methods return promises, so we need to use either `await` or `then` here! 
+/**
+ * @swagger
+ * /todos:
+ *  get:
+ *    summary: Gibt alle Todos zurück
+ *    tags: [Todos]
+ *    responses:
+ *      '200':
+ *        description: Eine Liste aller Todos
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/Todo'
  */
 
 app.get('/todos', async (req, res) => {

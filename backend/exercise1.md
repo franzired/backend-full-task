@@ -28,10 +28,10 @@ Wir verwenden vorerst noch ein Array für die Speicherung der ToDos (s. [index.j
 Implementieren und testen Sie die übrigen Operationen. Hierbei können Sie als Gruppe gleich das parallele Arbeiten üben, d.h. jedes Mitglied jetzt
 eine Funktion um und hinterher mergen Sie Ihren Code.
 
-- [ ] Create zum Anlegen eines ToDos,
-- [ ] Read eines einzelnen ToDos,
-- [ ] Update eines ToDos,
-- [ ] Delete eines ToDos.
+- [x ] Create zum Anlegen eines ToDos,
+- [x ] Read eines einzelnen ToDos,
+- [x ] Update eines ToDos,
+- [x ] Delete eines ToDos.
 
 > **Note**<br>
 > Um den Inhalt des Requests (den *Body*) als JSON-Objekt zu lesen, benötigen Sie die [Body Parser Middleware](https://expressjs.com/en/resources/middleware/body-parser.html)!
